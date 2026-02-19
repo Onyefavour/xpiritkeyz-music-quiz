@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xpiritkeyz Music Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a35;
+    --gold: #c9a84c;
+    --gold-light: #e8c96a;
+    --cream: #f0ead8;
+    --muted: #6b6b80;
+    --success: #4caf8a;
+    --error: #e05c6a;
+    --text: #e8e6f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -40%;
+    left: -20%;
+    width: 70%;
+    height: 70%;
+    background: radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 680px;
+    position: relative;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ---- SPLASH ---- */
+  .splash {
+    text-align: center;
+    padding: 60px 40px;
+  }
+
+  .clef-icon {
+    font-size: 80px;
+    line-height: 1;
+    margin-bottom: 16px;
+    display: block;
+    filter: drop-shadow(0 0 24px rgba(201,168,76,0.4));
+  }
+
+  .brand-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    color: var(--cream);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  h1 em { color: var(--gold); font-style: italic; }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 1rem;
+    font-weight: 300;
+    margin-bottom: 48px;
+    letter-spacing: 0.04em;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .cat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cat-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.08), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .cat-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+  .cat-card:hover::after { opacity: 1; }
+  .cat-card.selected { border-color: var(--gold); background: var(--surface2); }
+  .cat-card.selected::after { opacity: 1; }
+
+  .cat-emoji { font-size: 1.8rem; margin-bottom: 8px; display: block; }
+  .cat-name { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .cat-desc { font-size: 0.85rem; color: var(--muted); font-weight: 300; }
+
+  .btn {
+    background: var(--gold);
+    color: #0d0d0f;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 36px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+  }
+  .btn:hover { background: var(--gold-light); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+  /* ---- QUIZ ---- */
+  .quiz-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .q-counter { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--muted); }
+  .q-counter span { color: var(--gold); }
+
+  .score-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--gold);
+    background: rgba(201,168,76,0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    margin-bottom: 20px;
+  }
+
+  .q-category {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .q-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.1rem, 3vw, 1.45rem);
+    color: var(--cream);
+    line-height: 1.5;
+  }
+
+  .answers {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .answer-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text);
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .answer-btn:hover:not(:disabled) {
+    border-color: var(--gold);
+    background: var(--surface2);
+    transform: translateX(4px);
+  }
+
+  .answer-btn:disabled { cursor: default; }
+  .answer-btn.correct { border-color: var(--success); background: rgba(76,175,138,0.1); color: var(--success); }
+  .answer-btn.wrong { border-color: var(--error); background: rgba(224,92,106,0.1); color: var(--error); }
+
+  .answer-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  .explanation {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 20px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .explanation strong { color: var(--cream); }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ---- RESULTS ---- */
+  .results {
+    text-align: center;
+    padding: 50px 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+
+  .result-score {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3.5rem, 10vw, 5.5rem);
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .result-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .result-message {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    color: var(--cream);
+    margin-bottom: 8px;
+  }
+
+  .result-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 40px; }
+  .result-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .stars { font-size: 2rem; margin-bottom: 24px; letter-spacing: 4px; }
+
+  .footer-brand {
+    text-align: center;
+    margin-top: 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--border);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 480px) {
+    .category-grid { grid-template-columns: 1fr; }
+    .question-card { padding: 24px 20px; }
+    .splash { padding: 40px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- SPLASH -->
+  <div id="splash" class="screen active">
+    <div class="splash">
+      <span class="clef-icon">𝄞</span>
+      <div class="brand-name">Xpiritkeyz</div>
+      <h1>Music <em>Quiz</em></h1>
+      <p class="tagline">Test your music theory knowledge</p>
+
+      <p style="font-size:0.85rem; color:var(--muted); margin-bottom:16px; text-align:left; font-family:'DM Mono',monospace; letter-spacing:0.05em; text-transform:uppercase;">Choose a topic</p>
+      <div class="category-grid" id="categoryGrid">
+        <div class="cat-card selected" data-cat="all">
+          <span class="cat-emoji">🎵</span>
+          <div class="cat-name">All Topics</div>
+          <div class="cat-desc">Full mixed quiz</div>
+        </div>
+        <div class="cat-card" data-cat="notes">
+          <span class="cat-emoji">🎼</span>
+          <div class="cat-name">Notes & Scales</div>
+          <div class="cat-desc">Major, minor, intervals</div>
+        </div>
+        <div class="cat-card" data-cat="chords">
+          <span class="cat-emoji">🎹</span>
+          <div class="cat-name">Chords</div>
+          <div class="cat-desc">Triads, 7ths, progressions</div>
+        </div>
+        <div class="cat-card" data-cat="rhythm">
+          <span class="cat-emoji">🥁</span>
+          <div class="cat-name">Rhythm & Time</div>
+          <div class="cat-desc">Meter, note values, tempo</div>
+        </div>
+        <div class="cat-card" data-cat="symbols">
+          <span class="cat-emoji">📖</span>
+          <div class="cat-name">Notation</div>
+          <div class="cat-desc">Clefs, dynamics, symbols</div>
+        </div>
+        <div class="cat-card" data-cat="history">
+          <span class="cat-emoji">🎻</span>
+          <div class="cat-name">Music History</div>
+          <div class="cat-desc">Composers & eras</div>
+        </div>
+      </div>
+      <button class="btn" onclick="startQuiz()">Begin Quiz →</button>
+    </div>
+    <div class="footer-brand">© Xpiritkeyz Music Quiz</div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz" class="screen">
+    <div class="quiz-header">
+      <div class="q-counter">Question <span id="qNum">1</span> of <span id="qTotal">10</span></div>
+      <div class="score-badge">Score: <span id="scoreDisplay">0</span></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="question-card">
+      <div class="q-category" id="qCategory"></div>
+      <div class="q-text" id="qText"></div>
+    </div>
+    <div class="answers" id="answers"></div>
+    <div id="explanation" class="explanation" style="display:none;"></div>
+    <div style="display:flex; justify-content:flex-end;">
+      <button class="btn" id="nextBtn" style="display:none;" onclick="nextQuestion()">Next →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="screen">
+    <div class="results">
+      <div class="stars" id="stars"></div>
+      <div class="result-score" id="finalScore"></div>
+      <div class="result-label">correct answers</div>
+      <div class="result-message" id="resultMsg"></div>
+      <div class="result-sub" id="resultSub"></div>
+      <div class="result-actions">
+        <button class="btn" onclick="restartSame()">Play Again</button>
+        <button class="btn btn-ghost" onclick="goHome()">Change Topic</button>
+      </div>
+    </div>
+    <div class="footer-brand" style="margin-top:24px;">© Xpiritkeyz Music Quiz</div>
+  </div>
+
+</div>
+
+<script>
+const ALL_QUESTIONS = [
+
+  // ══════════════════════════════════════
+  // NOTES & SCALES (20 questions)
+  // ══════════════════════════════════════
+  { cat:"notes", q:"How many notes are in a standard Western octave (counting all semitones)?", a:["7","12","8","5"], correct:1, explain:"A Western octave contains <strong>12 semitones</strong> (half steps), including all the black and white keys between one C and the next C." },
+  { cat:"notes", q:"What is the interval between C and G called?", a:["Perfect 4th","Major 6th","Perfect 5th","Minor 3rd"], correct:2, explain:"C to G spans <strong>7 semitones</strong>, making it a <strong>Perfect 5th</strong> — one of the most consonant intervals in music." },
+  { cat:"notes", q:"A major scale follows which pattern of whole (W) and half (H) steps?", a:["W-W-H-W-W-W-H","W-H-W-W-H-W-W","H-W-W-W-H-W-W","W-W-W-H-W-W-H"], correct:0, explain:"<strong>W-W-H-W-W-W-H</strong> is the formula for every major scale. Starting on C, this gives C D E F G A B C." },
+  { cat:"notes", q:"Which note is a semitone (half step) above F?", a:["G","F♯","G♭","E"], correct:1, explain:"<strong>F♯</strong> (F sharp) is one semitone above F, landing on the black key between F and G." },
+  { cat:"notes", q:"How many sharps are in the key of G major?", a:["0","2","1","3"], correct:2, explain:"G major has exactly <strong>one sharp: F♯</strong>. The order of sharps is F C G D A E B." },
+  { cat:"notes", q:"What is the relative minor of C major?", a:["D minor","E minor","G minor","A minor"], correct:3, explain:"<strong>A minor</strong> shares the same notes as C major. Relative minors start on the 6th degree of the major scale." },
+  { cat:"notes", q:"An enharmonic equivalent means two notes that:", a:["Sound the same but are written differently","Have the same name but different pitch","Are exactly an octave apart","Share the same key signature"], correct:0, explain:"Enharmonic equivalents like <strong>C♯ and D♭</strong> sound identical on a piano but are spelled differently depending on context." },
+  { cat:"notes", q:"How many flats are in the key of F major?", a:["1","2","3","0"], correct:0, explain:"F major has exactly <strong>one flat: B♭</strong>. The order of flats is B E A D G C F." },
+  { cat:"notes", q:"What is a 'tritone'?", a:["An interval of 3 semitones","An interval of 6 semitones","A chord with three notes","A scale with three flats"], correct:1, explain:"A <strong>tritone</strong> spans <strong>6 semitones</strong> (augmented 4th or diminished 5th). It divides the octave exactly in half and sounds very dissonant." },
+  { cat:"notes", q:"The natural minor scale differs from the major scale by lowering which degrees?", a:["3rd and 7th","3rd, 6th, and 7th","2nd and 6th","4th and 7th"], correct:1, explain:"The <strong>natural minor scale</strong> lowers the 3rd, 6th, and 7th degrees of the major scale by one semitone each." },
+  { cat:"notes", q:"What is a 'pentatonic scale'?", a:["A scale with 4 notes","A scale with 5 notes","A scale with 6 notes","A scale with 8 notes"], correct:1, explain:"A <strong>pentatonic scale</strong> has <strong>5 notes</strong> per octave. The major pentatonic (e.g., C D E G A) is widely used in blues, rock, and folk music." },
+  { cat:"notes", q:"How many keys are on a standard piano?", a:["76","88","96","80"], correct:1, explain:"A standard piano has <strong>88 keys</strong> — 52 white and 36 black — spanning just over 7 octaves." },
+  { cat:"notes", q:"What interval is C to E♭?", a:["Major 3rd","Minor 3rd","Perfect 4th","Diminished 3rd"], correct:1, explain:"C to E♭ spans <strong>3 semitones</strong>, which is a <strong>minor 3rd</strong>. C to E natural (4 semitones) would be a major 3rd." },
+  { cat:"notes", q:"What is the leading tone in the key of C major?", a:["F","G","A","B"], correct:3, explain:"The <strong>leading tone</strong> is the 7th degree of the scale. In C major it is <strong>B</strong>, just a half step below the tonic C, creating strong upward pull." },
+  { cat:"notes", q:"Which mode starts on the 2nd degree of the major scale?", a:["Dorian","Phrygian","Lydian","Mixolydian"], correct:0, explain:"<strong>Dorian</strong> mode starts on the 2nd degree. In C major, D Dorian uses the same notes as C major but starts on D. It has a minor feel with a raised 6th." },
+  { cat:"notes", q:"The circle of fifths moves clockwise by what interval each step?", a:["Perfect 4th","Perfect 5th","Major 3rd","Minor 2nd"], correct:1, explain:"Moving clockwise on the <strong>circle of fifths</strong>, each step goes up a <strong>perfect 5th</strong> (and adds one sharp to the key signature)." },
+  { cat:"notes", q:"What is the subdominant in the key of G major?", a:["A","D","C","B"], correct:2, explain:"The <strong>subdominant</strong> is the 4th degree of the scale. In G major, the 4th degree is <strong>C</strong>." },
+  { cat:"notes", q:"The chromatic scale contains how many notes per octave?", a:["7","10","12","14"], correct:2, explain:"The <strong>chromatic scale</strong> includes all <strong>12 pitches</strong> within an octave, moving in half steps: C, C♯, D, D♯, E, F, F♯, G, G♯, A, A♯, B." },
+  { cat:"notes", q:"What is the dominant note in the key of D major?", a:["G","E","A","F♯"], correct:2, explain:"The <strong>dominant</strong> is the 5th degree of the scale. In D major (D E F♯ G A B C♯), the 5th degree is <strong>A</strong>." },
+  { cat:"notes", q:"Which interval sounds the same as a major 2nd but is spelled differently?", a:["Diminished 3rd","Augmented unison","Minor 3rd","Augmented 2nd"], correct:0, explain:"A <strong>diminished 3rd</strong> (e.g., C to E♭♭) spans 2 semitones, the same sonic distance as a major 2nd — they are enharmonic intervals." },
+
+  // ══════════════════════════════════════
+  // CHORDS (20 questions)
+  // ══════════════════════════════════════
+  { cat:"chords", q:"A major triad is built from which intervals above the root?", a:["Major 3rd + Perfect 5th","Minor 3rd + Perfect 5th","Major 3rd + Minor 6th","Perfect 4th + Major 6th"], correct:0, explain:"A <strong>major triad</strong> = root + major 3rd (4 semitones) + perfect 5th (7 semitones). For C major: C – E – G." },
+  { cat:"chords", q:"What chord does the Roman numeral V represent in a key?", a:["Tonic chord","Subdominant chord","Dominant chord","Leading tone chord"], correct:2, explain:"The <strong>V chord</strong> (dominant) is built on the 5th scale degree. In C major, V = G major. It creates tension that wants to resolve to I." },
+  { cat:"chords", q:"A diminished triad contains:", a:["Two major 3rds","A major 3rd and a perfect 5th","Two minor 3rds","A minor 3rd and an augmented 5th"], correct:2, explain:"A <strong>diminished triad</strong> stacks two minor 3rds. In C: C – E♭ – G♭. It sounds tense and unstable." },
+  { cat:"chords", q:"What does a dominant 7th chord add to a major triad?", a:["A major 7th","A minor 7th","An augmented 6th","A perfect 4th"], correct:1, explain:"A <strong>dominant 7th</strong> (e.g., G7) adds a minor 7th to a major triad: G – B – D – F. Its tension strongly resolves to the tonic." },
+  { cat:"chords", q:"The chord progression I–V–vi–IV is used in:", a:["Only classical music","Hundreds of pop songs","Jazz exclusively","Medieval chants"], correct:1, explain:"This <strong>'Axis progression'</strong> underlies hundreds of pop hits. In C: C – G – Am – F. Used in 'Let It Be', 'No Woman No Cry', and countless others." },
+  { cat:"chords", q:"An inverted chord means:", a:["The chord is played backwards","A note other than the root is in the bass","The chord uses flats only","The chord is played softer"], correct:1, explain:"A <strong>chord inversion</strong> puts a non-root chord tone in the lowest position. C/E (first inversion) has E in the bass." },
+  { cat:"chords", q:"A sus4 chord replaces the 3rd with:", a:["A 2nd","A 4th","A 5th","A 6th"], correct:1, explain:"A <strong>sus4 chord</strong> (suspended 4th) replaces the 3rd with a 4th. Csus4 = C – F – G. It creates an unresolved, floating feeling." },
+  { cat:"chords", q:"What is a 'power chord'?", a:["Root + major 3rd","Root + perfect 5th (no 3rd)","Root + minor 7th","Root + octave only"], correct:1, explain:"A <strong>power chord</strong> consists of the root and perfect 5th only, with no 3rd. It's neither major nor minor — very common in rock guitar." },
+  { cat:"chords", q:"How many notes are in a seventh chord?", a:["3","4","5","2"], correct:1, explain:"A <strong>seventh chord</strong> has <strong>4 notes</strong>: the root, 3rd, 5th, and 7th. The Cmaj7 chord is C – E – G – B." },
+  { cat:"chords", q:"In the key of C major, which chord is built on the ii degree?", a:["C major","D minor","E minor","F major"], correct:1, explain:"In C major, the ii chord is built on D and uses scale tones D–F–A, forming a <strong>D minor</strong> triad. Minor ii chords are very common in jazz." },
+  { cat:"chords", q:"An augmented triad contains:", a:["Two major 3rds","A major 3rd and a perfect 5th","Two minor 3rds","A minor 3rd and a perfect 5th"], correct:0, explain:"An <strong>augmented triad</strong> stacks two major 3rds. C augmented = C – E – G♯. Its symmetric structure makes it sound dreamy or unsettling." },
+  { cat:"chords", q:"What does 'cadence' mean in music theory?", a:["A type of scale","A rhythmic pattern","A chord progression that ends a musical phrase","A type of ornamentation"], correct:2, explain:"A <strong>cadence</strong> is a sequence of chords that creates a sense of resolution or pause at the end of a musical phrase. The most common is the V–I (authentic cadence)." },
+  { cat:"chords", q:"What is a 'pedal point'?", a:["Pressing the sustain pedal","A sustained note in the bass while chords change above","A chord played with the foot","A repeated rhythmic pattern"], correct:1, explain:"A <strong>pedal point</strong> is a sustained or repeated bass note while the harmonies above it change — creating tension and release as chords move in and out of alignment." },
+  { cat:"chords", q:"The ii–V–I progression is most associated with:", a:["Blues","Classical sonata","Jazz harmony","Folk music"], correct:2, explain:"The <strong>ii–V–I</strong> is the cornerstone of <strong>jazz harmony</strong>. In C: Dm7 – G7 – Cmaj7. It provides strong harmonic motion to the tonic." },
+  { cat:"chords", q:"A half-diminished chord (ø7) consists of:", a:["Diminished triad + major 7th","Diminished triad + minor 7th","Minor triad + diminished 7th","Augmented triad + major 7th"], correct:1, explain:"A <strong>half-diminished (ø7)</strong> chord = diminished triad + minor 7th (e.g., B–D–F–A). It differs from fully diminished which uses a diminished 7th." },
+  { cat:"chords", q:"What is 'voice leading'?", a:["How loud singers should sing","The smooth movement of individual chord tones between chords","The range of a singer's voice","Choosing which instrument plays the melody"], correct:1, explain:"<strong>Voice leading</strong> is the craft of moving individual notes (voices) between chords as smoothly as possible, minimizing large leaps and creating a flowing harmonic texture." },
+  { cat:"chords", q:"A Neapolitan chord (♭II) is typically found:", a:["In the key's home position","On the flattened second scale degree","On the 7th scale degree","Only in jazz"], correct:1, explain:"The <strong>Neapolitan chord</strong> is a major triad built on the ♭2nd scale degree. In C major: D♭ major. It's often used in classical and romantic music before a dominant chord." },
+  { cat:"chords", q:"Which chord contains the notes C–E–G–B?", a:["C dominant 7th","C major 7th","C minor 7th","C augmented 7th"], correct:1, explain:"C–E–G–B is a <strong>C major 7th (Cmaj7)</strong>. The B is a major 7th above C. Contrast this with C7 (dominant 7th) which uses B♭ instead." },
+  { cat:"chords", q:"What is a 'borrowed chord'?", a:["A chord from another instrument","A chord from the parallel minor (or major) key","A chord that resolves unusually","A chord with an added note"], correct:1, explain:"A <strong>borrowed chord</strong> is taken from the parallel key — for example, using a iv (minor subdominant) chord in a major key. Very common in pop and rock." },
+  { cat:"chords", q:"The notes of a C minor triad are:", a:["C – E – G","C – E♭ – G♭","C – E♭ – G","C – E – G♯"], correct:2, explain:"A <strong>C minor triad</strong> = C – E♭ – G. It's built with a minor 3rd (3 semitones) and then a major 3rd (4 semitones) above that." },
+
+  // ══════════════════════════════════════
+  // RHYTHM & TIME (20 questions)
+  // ══════════════════════════════════════
+  { cat:"rhythm", q:"In 4/4 time, how many beats does a half note receive?", a:["1","4","2","3"], correct:2, explain:"A <strong>half note</strong> = 2 beats in 4/4 time. A whole note = 4, a quarter note = 1, an eighth note = ½ beat." },
+  { cat:"rhythm", q:"What does the top number in a time signature tell you?", a:["The tempo in BPM","The type of note that gets one beat","How many beats are in each measure","The duration of the piece"], correct:2, explain:"The <strong>top number</strong> tells you how many beats are in each measure. The bottom number tells you which note value gets one beat." },
+  { cat:"rhythm", q:"What is a 'syncopation' in rhythm?", a:["Playing all notes at equal volume","Emphasizing beats that are normally weak","Slowing down at the end","Playing in perfect time"], correct:1, explain:"<strong>Syncopation</strong> places accents on normally weak beats or between beats, creating a forward-leaning feel central to jazz, funk, and pop." },
+  { cat:"rhythm", q:"The Italian term 'Allegro' indicates:", a:["Slow and stately","Very fast","Fast and lively","Extremely slow"], correct:2, explain:"<strong>Allegro</strong> means fast and lively — typically 120–168 BPM. It comes from the Italian word for 'cheerful' or 'brisk'." },
+  { cat:"rhythm", q:"What is a dotted quarter note worth in 4/4 time?", a:["2 beats","1.5 beats","2.5 beats","3 beats"], correct:1, explain:"A <strong>dot</strong> adds half the note's value. A quarter note = 1 beat, so a dotted quarter = 1 + 0.5 = <strong>1.5 beats</strong>." },
+  { cat:"rhythm", q:"What is a 'fermata' symbol?", a:["A repeat sign","A hold/pause on a note","A rest symbol","A crescendo marking"], correct:1, explain:"A <strong>fermata (𝄐)</strong> tells the performer to hold a note longer than its written value, at the discretion of the conductor or player." },
+  { cat:"rhythm", q:"'Andante' as a tempo marking means:", a:["Very slow","Walking pace (moderate)","Fast","Very fast"], correct:1, explain:"<strong>Andante</strong> comes from the Italian 'to walk' and indicates a moderate, walking pace — roughly 76–108 BPM." },
+  { cat:"rhythm", q:"In 6/8 time, how many eighth notes fit in one bar?", a:["4","8","6","3"], correct:2, explain:"In <strong>6/8 time</strong>, there are <strong>6 eighth notes</strong> per bar, grouped naturally as two beats of three (a compound duple meter)." },
+  { cat:"rhythm", q:"A 'triplet' divides one beat into:", a:["2 equal parts","3 equal parts","4 equal parts","5 equal parts"], correct:1, explain:"A <strong>triplet</strong> squeezes <strong>3 notes</strong> into the space of 2. Quarter note triplets fit 3 notes in 2 beats — common in jazz and ballads." },
+  { cat:"rhythm", q:"What is 'ritardando' (rit.)?", a:["Gradually getting louder","Gradually slowing down","Suddenly stopping","Getting faster"], correct:1, explain:"<strong>Ritardando (rit.)</strong> means gradually slowing down. It's common at the ends of phrases or pieces for an expressive effect." },
+  { cat:"rhythm", q:"The bottom number '8' in a time signature means:", a:["There are 8 beats per bar","An eighth note gets one beat","The tempo is 8 BPM","There are 8 measures"], correct:1, explain:"The bottom number represents the note value that gets one beat. <strong>8 = eighth note</strong>. So 6/8 means 6 eighth notes per bar." },
+  { cat:"rhythm", q:"What is 'hemiola'?", a:["A type of chord","A rhythmic pattern where 3 groups of 2 are felt as 2 groups of 3","A pitch-bending technique","A type of scale"], correct:1, explain:"<strong>Hemiola</strong> creates rhythmic ambiguity by temporarily superimposing duple feel over triple meter (or vice versa). Very common in Baroque and Renaissance music." },
+  { cat:"rhythm", q:"'Presto' indicates a tempo that is:", a:["Slow","Moderate","Very fast","Fast but not hurried"], correct:2, explain:"<strong>Presto</strong> means very fast — typically 168–200 BPM. It's faster than Allegro and one of the fastest standard tempo markings." },
+  { cat:"rhythm", q:"A 'downbeat' in music refers to:", a:["A quiet passage","The first (strongest) beat of a measure","A bass drum hit","A low note"], correct:1, explain:"The <strong>downbeat</strong> is beat 1 of a measure — the strongest, most emphasized beat. The 'upbeat' (anacrusis) is the weak beat just before it." },
+  { cat:"rhythm", q:"What is a 'polyrhythm'?", a:["A scale using many notes","Two or more different rhythms played simultaneously","A rhythm that speeds up over time","A rhythm with no pattern"], correct:1, explain:"<strong>Polyrhythm</strong> means two or more conflicting rhythmic patterns played at the same time — like 3 against 2. Central to African drumming and jazz." },
+  { cat:"rhythm", q:"How many sixteenth notes equal one quarter note?", a:["2","8","4","6"], correct:2, explain:"A quarter note = 2 eighth notes = <strong>4 sixteenth notes</strong>. Each subdivision doubles the number of notes per beat." },
+  { cat:"rhythm", q:"'A cappella' means:", a:["Without accompaniment","Very softly","With a full orchestra","Using only drums"], correct:0, explain:"<strong>A cappella</strong> means <strong>without instrumental accompaniment</strong>. Vocals-only singing. The phrase is Italian for 'in the chapel style'." },
+  { cat:"rhythm", q:"What is a 'pickup' (anacrusis)?", a:["A guitar technique","An incomplete measure of notes before the first full bar","A type of drum roll","A fermata on the last note"], correct:1, explain:"A <strong>pickup</strong> or <strong>anacrusis</strong> is an incomplete measure of one or more notes that precede the first full measure. 'Happy Birthday' famously starts with a pickup." },
+  { cat:"rhythm", q:"Compound meter means:", a:["The beat divides naturally into 2","The beat divides naturally into 3","The piece uses two time signatures","The rhythm is very complex"], correct:1, explain:"In <strong>compound meter</strong> (like 6/8, 9/8, 12/8), each beat divides naturally into <strong>3 equal parts</strong>. In simple meter (4/4, 3/4), beats divide into 2." },
+  { cat:"rhythm", q:"What does 'BPM' stand for in music?", a:["Beats Per Melody","Bass-to-Pitch Modulation","Beats Per Minute","Bar and Phrase Marker"], correct:2, explain:"<strong>BPM = Beats Per Minute</strong> — the standard measurement of tempo. 60 BPM = 1 beat per second. A typical pop song is around 100–130 BPM." },
+
+  // ══════════════════════════════════════
+  // NOTATION & SYMBOLS (20 questions)
+  // ══════════════════════════════════════
+  { cat:"symbols", q:"What is the treble clef also known as?", a:["Bass clef","G clef","C clef","F clef"], correct:1, explain:"The treble clef is also called the <strong>G clef</strong> because its spiral curls around the G line (second line from the bottom of the staff)." },
+  { cat:"symbols", q:"What does 'pp' (pianissimo) mean in music?", a:["Very loud","Moderately soft","Very soft","Getting louder"], correct:2, explain:"<strong>Pianissimo (pp)</strong> means very soft. The full dynamic range from soft to loud: pp, p, mp, mf, f, ff." },
+  { cat:"symbols", q:"What does a 'crescendo' marking indicate?", a:["Gradually getting softer","Suddenly loud","Gradually getting louder","Repeat the section"], correct:2, explain:"A <strong>crescendo</strong> (<) means gradually increase in volume. Its opposite is a decrescendo or diminuendo — gradually getting softer." },
+  { cat:"symbols", q:"How many lines does a standard musical staff have?", a:["4","6","5","7"], correct:2, explain:"A standard staff has exactly <strong>5 lines</strong> and 4 spaces. Notes sit on the lines and in the spaces. Ledger lines extend the staff above or below." },
+  { cat:"symbols", q:"What does 'staccato' mean?", a:["Held for full value","Played detached and short","Played very smoothly","Very loud"], correct:1, explain:"<strong>Staccato</strong> (marked with a dot above or below the note) means played short and detached. The opposite is <strong>legato</strong> — smooth and connected." },
+  { cat:"symbols", q:"What does the bass clef (F clef) do?", a:["Indicates notes in a high register","Indicates the F below middle C on the 4th line","Shows where treble notes are","Marks the key signature"], correct:1, explain:"The <strong>bass clef (F clef)</strong> marks F3 (F below middle C) on its 4th line. It's used by low-pitched instruments like cello, bass guitar, and left-hand piano." },
+  { cat:"symbols", q:"A 'tie' in music notation connects:", a:["Two different pitches","Two notes of the same pitch to extend its duration","The beginning and end of a repeat","A note to its rest"], correct:1, explain:"A <strong>tie</strong> connects two notes of the <strong>same pitch</strong>, combining their durations into one continuous sound. It's different from a slur, which connects different pitches." },
+  { cat:"symbols", q:"What does 'ff' (fortissimo) mean?", a:["Fairly loud","Very loud","Medium loud","Extremely soft"], correct:1, explain:"<strong>Fortissimo (ff)</strong> means <strong>very loud</strong>. It's louder than forte (f). fff (triple forte) exists too, indicating the maximum dynamic level." },
+  { cat:"symbols", q:"What is a 'natural sign' (♮) used for?", a:["To raise a note by a half step","To lower a note by a half step","To cancel a previous sharp or flat","To indicate a repeat"], correct:2, explain:"A <strong>natural sign (♮)</strong> cancels any previous sharp or flat, returning the note to its unaltered pitch." },
+  { cat:"symbols", q:"What is a 'coda' in music?", a:["A section marking the end of a piece","A type of clef","A dynamic marking","A key change symbol"], correct:0, explain:"A <strong>coda</strong> (Italian for 'tail') is a concluding section appended to a piece. It often follows a 'Dal Segno al Coda' instruction to jump forward to the ending." },
+  { cat:"symbols", q:"What does 'sforzando' (sfz) mean?", a:["Getting slower","Suddenly and strongly accented","Getting louder gradually","A long held note"], correct:1, explain:"<strong>Sforzando (sfz)</strong> means a sudden, strong accent on a single note — like a sharp punch of emphasis within an otherwise normal dynamic level." },
+  { cat:"symbols", q:"A repeat sign tells the performer to:", a:["Skip the next section","Play the previous section again","Slow down","End the piece"], correct:1, explain:"A <strong>repeat sign (𝄇)</strong> instructs the player to go back to the previous repeat sign (or the beginning) and play that section again." },
+  { cat:"symbols", q:"What does 'legato' indicate?", a:["Short and detached","Long and smooth","Very loud","Getting faster"], correct:1, explain:"<strong>Legato</strong> means to play notes long and <strong>smoothly connected</strong>, with no gaps between them. It is often shown by a slur (curved line) over a group of notes." },
+  { cat:"symbols", q:"Which clef is used for middle-range instruments like viola?", a:["Treble clef","Bass clef","Alto (C) clef","Tenor clef"], correct:2, explain:"The <strong>alto (C) clef</strong> places middle C on the middle (3rd) line of the staff. It's primarily used for viola and sometimes for trombone and cello in higher passages." },
+  { cat:"symbols", q:"What is an 'accidental' in music notation?", a:["A mistake in the score","A sharp, flat, or natural sign that modifies a note","A note that falls off the staff","An unexpected rest"], correct:1, explain:"An <strong>accidental</strong> is a sharp (♯), flat (♭), or natural (♮) placed before a note to raise, lower, or restore it. Accidentals last for the entire measure." },
+  { cat:"symbols", q:"What does 'D.C. al Fine' mean?", a:["Go back to the sign and play to the end","Go back to the beginning and play to 'Fine'","Play to the coda","Repeat 3 times"], correct:1, explain:"<strong>D.C. al Fine (Da Capo al Fine)</strong> means return to the beginning and play until the word 'Fine' (end). A very common instruction in both classical and popular sheet music." },
+  { cat:"symbols", q:"How is 'mezzo forte' abbreviated?", a:["m","mf","ff","mp"], correct:1, explain:"<strong>Mezzo forte</strong> is abbreviated <strong>mf</strong> and means moderately loud — louder than mezzo piano (mp) but softer than forte (f)." },
+  { cat:"symbols", q:"What is a 'slur' in notation?", a:["A curved line connecting notes of different pitches to be played smoothly","A type of accidental","A bar-line variant","A type of rest"], correct:0, explain:"A <strong>slur</strong> is a curved line connecting notes of different pitches, indicating they should be played smoothly (legato). Unlike a tie, the notes under a slur are different pitches." },
+  { cat:"symbols", q:"What does 'col legno' instruct a string player to do?", a:["Play with the bow hair as usual","Play with the wood of the bow","Pluck the strings","Mute the strings with the hand"], correct:1, explain:"<strong>Col legno</strong> (Italian for 'with the wood') instructs string players to strike or tap the strings with the <strong>wooden stick of the bow</strong>, creating a percussive, eerie effect." },
+  { cat:"symbols", q:"What is a 'double bar line' used for?", a:["Indicating a very long note","Marking the end of a section or the entire piece","Doubling the tempo","Indicating a key change"], correct:1, explain:"A <strong>double bar line</strong> marks the <strong>end of a section</strong>, and a final double bar line (with one thick line) marks the end of the entire piece." },
+
+  // ══════════════════════════════════════
+  // MUSIC HISTORY (20 questions)
+  // ══════════════════════════════════════
+  { cat:"history", q:"Which composer was deaf when he wrote his Ninth Symphony?", a:["Mozart","Vivaldi","Bach","Beethoven"], correct:3, explain:"<strong>Beethoven</strong> completed his Ninth Symphony in 1824 while completely deaf, famously having to be turned around to see the audience applauding at its premiere." },
+  { cat:"history", q:"What musical period did Johann Sebastian Bach belong to?", a:["Classical","Renaissance","Baroque","Romantic"], correct:2, explain:"Bach (1685–1750) is the defining master of the <strong>Baroque</strong> period (c. 1600–1750), known for its complexity, ornamentation, and counterpoint." },
+  { cat:"history", q:"Which instrument is Wolfgang Amadeus Mozart best known for composing for?", a:["Violin","Harpsichord","Piano","Cello"], correct:2, explain:"Mozart was a child prodigy on the <strong>piano (fortepiano)</strong> and composed 27 piano concertos, along with masterworks for many other instruments." },
+  { cat:"history", q:"What is the name of the system where notes are named Do, Re, Mi, Fa, Sol, La, Ti?", a:["Figured bass","Solfège","Tablature","Roman numeral analysis"], correct:1, explain:"<strong>Solfège</strong> (or solfeggio) assigns syllables to scale degrees. It was made famous to modern audiences by 'Do-Re-Mi' from The Sound of Music." },
+  { cat:"history", q:"The Romantic period in classical music roughly spanned:", a:["1400–1600","1600–1750","1750–1820","1820–1900"], correct:3, explain:"The <strong>Romantic period</strong> (c. 1820–1900) featured Chopin, Brahms, Wagner, and Tchaikovsky, emphasizing emotion, nationalism, and large-scale works." },
+  { cat:"history", q:"Which composer wrote 'The Four Seasons'?", a:["Handel","Haydn","Vivaldi","Corelli"], correct:2, explain:"<strong>Antonio Vivaldi</strong> composed The Four Seasons (Le quattro stagioni) around 1723. These four violin concertos are among the most popular Baroque works ever written." },
+  { cat:"history", q:"What is 'jazz' most closely associated with as its country of origin?", a:["Cuba","Brazil","United States","France"], correct:2, explain:"<strong>Jazz</strong> originated in <strong>New Orleans, USA</strong> in the late 19th and early 20th century, blending African American musical traditions, blues, ragtime, and European harmony." },
+  { cat:"history", q:"Who composed the opera 'The Magic Flute' (Die Zauberflöte)?", a:["Beethoven","Haydn","Mozart","Schubert"], correct:2, explain:"<strong>Mozart</strong> composed The Magic Flute in 1791, the year of his death. It was his final opera and is one of the most beloved works in the repertoire." },
+  { cat:"history", q:"The Classical period in Western music approximately spans:", a:["1600–1750","1750–1820","1820–1900","1900–1950"], correct:1, explain:"The <strong>Classical period</strong> (c. 1750–1820) featured Haydn, Mozart, and early Beethoven. It emphasized clarity, balance, and formal structure." },
+  { cat:"history", q:"Which composer wrote the 'Ode to Joy' melody?", a:["Bach","Schubert","Brahms","Beethoven"], correct:3, explain:"<strong>Beethoven</strong> composed the Ode to Joy as the final movement of his Ninth Symphony (1824). It's now the anthem of the European Union." },
+  { cat:"history", q:"What style of music is characterized by 12-bar blues and call-and-response?", a:["Classical","Blues","Opera","Minimalism"], correct:1, explain:"The <strong>blues</strong> tradition features the 12-bar chord progression (I–I–I–I–IV–IV–I–I–V–IV–I–I) and call-and-response vocal patterns, originating in African American communities in the Deep South." },
+  { cat:"history", q:"Who is considered the 'father of the symphony'?", a:["Mozart","Bach","Haydn","Beethoven"], correct:2, explain:"<strong>Franz Joseph Haydn</strong> (1732–1809) is called the 'father of the symphony' for developing the form, writing over 100 symphonies that set the standard for the Classical era." },
+  { cat:"history", q:"Which country gave birth to the 'bossa nova' style?", a:["Argentina","Cuba","Mexico","Brazil"], correct:3, explain:"<strong>Bossa nova</strong> emerged in <strong>Brazil</strong> in the late 1950s, blending samba rhythms with jazz harmony. Key figures include João Gilberto and composer Antônio Carlos Jobim." },
+  { cat:"history", q:"'Serialism' (12-tone technique) was pioneered by:", a:["Igor Stravinsky","Arnold Schoenberg","Claude Debussy","Béla Bartók"], correct:1, explain:"<strong>Arnold Schoenberg</strong> developed 12-tone (serial) composition in the 1920s, where all 12 chromatic notes must appear before any repeats. A key break from tonal tradition." },
+  { cat:"history", q:"What is 'counterpoint'?", a:["Playing against the beat","Two or more independent melodic lines that work harmonically together","A method of tuning instruments","A way of writing chord symbols"], correct:1, explain:"<strong>Counterpoint</strong> is the technique of combining two or more independent melodic lines simultaneously. Bach's fugues are the supreme example of contrapuntal mastery." },
+  { cat:"history", q:"The Gregorian chant is associated with which era?", a:["Baroque","Renaissance","Medieval","Classical"], correct:2, explain:"<strong>Gregorian chant</strong> is monophonic (single-line) sacred music from the <strong>Medieval</strong> period, developed in the early Christian church. It has no regular meter and uses modal scales." },
+  { cat:"history", q:"Who composed 'The Rite of Spring', which caused a riot at its 1913 premiere?", a:["Debussy","Mahler","Stravinsky","Bartók"], correct:2, explain:"<strong>Igor Stravinsky's</strong> The Rite of Spring premiered in Paris in 1913. Its violent rhythms and dissonances were so shocking, the audience famously rioted in the theater." },
+  { cat:"history", q:"'Reggae' music originated in which country?", a:["Nigeria","Trinidad","Jamaica","Barbados"], correct:2, explain:"<strong>Reggae</strong> originated in <strong>Jamaica</strong> in the late 1960s. Characterized by offbeat rhythms and bass-heavy grooves, it was popularized globally by artists like Bob Marley." },
+  { cat:"history", q:"What instrument did Frédéric Chopin write almost exclusively for?", a:["Violin","Cello","Organ","Piano"], correct:3, explain:"<strong>Frédéric Chopin</strong> (1810–1849) wrote almost exclusively for the <strong>piano</strong>, composing nocturnes, études, preludes, and ballades that remain central to the solo piano repertoire." },
+  { cat:"history", q:"Which ancient Greek philosopher wrote extensively about music's effect on the soul?", a:["Socrates","Aristotle","Plato","Pythagoras"], correct:2, explain:"<strong>Plato</strong> wrote in The Republic that music had the power to shape character and affect the soul directly. He believed certain modes encouraged virtue or vice." },
+];
+
+const CATEGORY_NAMES = {
+  notes: "Notes & Scales",
+  chords: "Chords",
+  rhythm: "Rhythm & Time",
+  symbols: "Notation",
+  history: "Music History",
+  all: "All Topics"
+};
+
+let selectedCat = "all";
+let questions = [];
+let current = 0;
+let score = 0;
+let answered = false;
+
+document.querySelectorAll('.cat-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedCat = card.dataset.cat;
+  });
+});
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  let pool = selectedCat === "all" ? ALL_QUESTIONS : ALL_QUESTIONS.filter(q => q.cat === selectedCat);
+  if (pool.length === 0) pool = ALL_QUESTIONS;
+  questions = shuffle(pool).slice(0, Math.min(20, pool.length));
+  current = 0;
+  score = 0;
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+  document.getElementById('qNum').textContent = current + 1;
+  document.getElementById('qTotal').textContent = questions.length;
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('progressFill').style.width = ((current / questions.length) * 100) + '%';
+  document.getElementById('qCategory').textContent = CATEGORY_NAMES[q.cat] || q.cat;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('explanation').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'none';
+
+  const labels = ['A','B','C','D'];
+  const answersDiv = document.getElementById('answers');
+  const indices = shuffle([0,1,2,3]);
+  answersDiv.innerHTML = '';
+  indices.forEach((origIdx, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = `<span class="answer-label">${labels[i]}</span>${q.a[origIdx]}`;
+    btn.addEventListener('click', () => selectAnswer(btn, origIdx, q));
+    answersDiv.appendChild(btn);
+  });
+}
+
+function selectAnswer(btn, idx, q) {
+  if (answered) return;
+  answered = true;
+  const allBtns = document.querySelectorAll('.answer-btn');
+  allBtns.forEach(b => b.disabled = true);
+  if (idx === q.correct) {
+    btn.classList.add('correct');
+    score++;
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b => {
+      if (b.textContent.includes(q.a[q.correct])) b.classList.add('correct');
+    });
+  }
+  document.getElementById('scoreDisplay').textContent = score;
+  const exp = document.getElementById('explanation');
+  exp.innerHTML = `💡 ${q.explain}`;
+  exp.style.display = 'block';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+  document.getElementById('nextBtn').textContent = current + 1 >= questions.length ? 'See Results →' : 'Next →';
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  showScreen('results');
+  const total = questions.length;
+  const pct = score / total;
+  document.getElementById('finalScore').textContent = `${score}/${total}`;
+  document.getElementById('progressFill').style.width = '100%';
+  let stars, msg, sub;
+  if (pct === 1)       { stars='★★★★★'; msg='Perfect Score!';          sub="You're a music theory master. Bravo!"; }
+  else if (pct >= 0.8) { stars='★★★★☆'; msg='Excellent Work!';         sub="You clearly know your theory. Just a few gaps to fill!"; }
+  else if (pct >= 0.6) { stars='★★★☆☆'; msg='Good Progress!';          sub="Solid foundation — keep practicing and you'll ace it."; }
+  else if (pct >= 0.4) { stars='★★☆☆☆'; msg='Keep Studying!';          sub="Music theory takes time. Try focusing on one topic at a time."; }
+  else                 { stars='★☆☆☆☆'; msg='Just Getting Started!';   sub="Everyone begins somewhere. Review the explanations and try again!"; }
+  document.getElementById('stars').textContent = stars;
+  document.getElementById('resultMsg').textContent = msg;
+  document.getElementById('resultSub').textContent = sub;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function restartSame() { startQuiz(); }
+function goHome() { showScreen('splash'); }
+</script>
+</body>
+</html>
